@@ -26,14 +26,14 @@ return {
     end,
   },
 
-  -- jdtls via Homebrew usando Java 21 + lombok baixado manualmente
+  -- jdtls via Homebrew usando Java 25 + lombok baixado manualmente
   {
     "mfussenegger/nvim-jdtls",
     opts = function(_, opts)
-      local java21_home = "/var/home/linuxbrew/.linuxbrew/opt/openjdk@21/libexec"
+      local java25_home = "/var/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec"
       local cmd = {
         "/usr/bin/env",
-        "JAVA_HOME=" .. java21_home,
+        "JAVA_HOME=" .. java25_home,
         vim.fn.exepath("jdtls"),
       }
       local lombok_jar = vim.fn.expand("~/.local/share/nvim/lombok.jar")
@@ -88,8 +88,8 @@ return {
           configuration = {
             runtimes = {
               {
-                name = "JavaSE-21",
-                path = java21_home,
+                name = "JavaSE-25",
+                path = java25_home,
                 default = true,
               },
             },
