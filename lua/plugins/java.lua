@@ -72,6 +72,38 @@ return {
         end
       end
 
+      local function format_java(bufnr)
+        local config_dir = vim.fn.stdpath("config")
+        local classpath = config_dir
+          .. "/tools:/var/home/linuxbrew/.linuxbrew/opt/jdtls/libexec/plugins/*"
+
+        local source = table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), "\n")
+        local result = vim.system({
+          "/var/home/linuxbrew/.linuxbrew/opt/openjdk@25/bin/java",
+          "-cp",
+          classpath,
+          "JavaFormatter",
+        }, {
+          stdin = source,
+          text = true,
+        }):wait()
+
+        if result.code ~= 0 then
+          vim.notify(
+            "Falha ao formatar Java: " .. (result.stderr or "erro desconhecido"),
+            vim.log.levels.ERROR
+          )
+          return
+        end
+
+        if not result.stdout or result.stdout == "" or result.stdout == source then
+          return
+        end
+
+        local formatted = vim.split(result.stdout:gsub("\r\n", "\n"), "\n", { plain = true })
+        vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, formatted)
+      end
+
       local group = vim.api.nvim_create_augroup("java_save_actions", { clear = true })
       vim.api.nvim_create_autocmd("BufWritePre", {
         group = group,
@@ -79,6 +111,7 @@ return {
         callback = function(event)
           fix_missing_semicolons(event.buf)
           organize_imports(event.buf)
+          format_java(event.buf)
         end,
       })
 
