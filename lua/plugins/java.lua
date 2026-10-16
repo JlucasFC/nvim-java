@@ -26,14 +26,36 @@ return {
     end,
   },
 
-  -- jdtls via Homebrew usando Java 25 + lombok baixado manualmente
+  -- jdtls via Homebrew usando JAVA_HOME + lombok baixado manualmente
   {
     "mfussenegger/nvim-jdtls",
     opts = function(_, opts)
-      local java25_home = "/var/home/linuxbrew/.linuxbrew/opt/openjdk@25/libexec"
+      local java_home = vim.env.JAVA_HOME
+      local java_bin = java_home and (java_home .. "/bin/java") or nil
+
+      if not java_bin or vim.fn.executable(java_bin) ~= 1 then
+        vim.notify("JAVA_HOME ausente ou invalido: configure um JDK valido", vim.log.levels.ERROR)
+        return
+      end
+
+      local java_major
+      local release_file = java_home .. "/release"
+      if vim.fn.filereadable(release_file) == 1 then
+        for _, line in ipairs(vim.fn.readfile(release_file)) do
+          java_major = line:match('^JAVA_VERSION="(%d+)')
+          if java_major then
+            break
+          end
+        end
+      end
+      if not java_major then
+        vim.notify("Nao foi possivel identificar a versao do JDK em " .. release_file, vim.log.levels.ERROR)
+        return
+      end
+
       local cmd = {
         "/usr/bin/env",
-        "JAVA_HOME=" .. java25_home,
+        "JAVA_HOME=" .. java_home,
         vim.fn.exepath("jdtls"),
       }
       local lombok_jar = vim.fn.expand("~/.local/share/nvim/lombok.jar")
@@ -79,7 +101,7 @@ return {
 
         local source = table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), "\n")
         local result = vim.system({
-          "/var/home/linuxbrew/.linuxbrew/opt/openjdk@25/bin/java",
+          java_bin,
           "-cp",
           classpath,
           "JavaFormatter",
@@ -121,8 +143,8 @@ return {
           configuration = {
             runtimes = {
               {
-                name = "JavaSE-25",
-                path = java25_home,
+                name = "JavaSE-" .. java_major,
+                path = java_home,
                 default = true,
               },
             },
